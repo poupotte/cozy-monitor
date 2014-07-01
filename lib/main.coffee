@@ -34,6 +34,13 @@ appsPath = '/usr/local/cozy/apps'
 
 ## Helpers
 
+randomString = (length) ->
+    string = ""
+    while (string.length < length)
+        string = string + Math.random().toString(36).substr(2)
+    return string.substr 0, length
+
+
 getToken = () ->
     if fs.existsSync '/etc/cozy/controller.token'
         try
@@ -205,49 +212,60 @@ program
     .option('-d, --displayName <displayName>', 'Display specific name')
     .action (app, options) ->
         manifest.name = app
+        manifest.password = randomString 12
         if options.displayName?
             manifest.displayName = options.displayName
         else
             manifest.displayName = app
         manifest.user = app
         console.log "Install started for #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            unless options.repo?
-                manifest.repository.url =
-                    "https://github.com/mycozycloud/cozy-#{app}.git"
-            else
-                manifest.repository.url = options.repo
-            if options.branch?
-                manifest.repository.branch = options.branch
-            client.clean manifest, (err, res, body) ->
-                client.start manifest, (err, res, body)  ->
-                    if err or body.error?
-                        handleError err, body, "Install failed"
-                    else
-                        client.brunch manifest, =>
-                            console.log "#{app} successfully installed"
+        unless options.repo?
+            manifest.repository.url =
+                "https://github.com/mycozycloud/cozy-#{app}.git"
         else
-            unless options.repo?
-                manifest.git =
-                    "https://github.com/mycozycloud/cozy-#{app}.git"
-            else
-                manifest.git = options.repo
-            if options.branch?
-                manifest.branch = options.branch
-            path = "api/applications/install"
-            homeClient.post path, manifest, (err, res, body) ->
-                if err or body.error
-                    if body.message? and body.message.indexOf('Not Found') isnt -1
-                        err = "Default git repo (#{manifest.git}) doesn't exist. You can use option -r to use a specific repo"
-                        handleError err, null, "Install home failed"
-                    else
-                        handleError err, body, "Install home failed"
+            manifest.repository.url = options.repo
+        if options.branch?
+            manifest.repository.branch = options.branch
+        client.clean manifest, (err, res, body) ->
+            client.start manifest, (err, res, body)  ->
+                if err or body.error?
+                    handleError err, body, "Install failed"
                 else
-                    waitInstallComplete body.app.slug, (err, appresult) ->
-                        if not err? and appresult.state is "installed"
+                    #client.brunch manifest, =>
+
+                    if app in ['data-system', 'home', 'proxy']
+                        console.log "#{app} successfully installed"
+                    else
+                        manifest.port = body.drone.port
+                        manifest.docType = "Application"
+                        manifest.state = "installed"
+                        manifest.slug = manifest.name
+                        if manifest.name is "contacts"
+                            manifest.permissions =
+                                "Contact":
+                                    "description": "Creates and edits your contacts."
+                                "CozyInstance":
+                                  "description": "Read language setting"
+                                "ContactConfig":
+                                  "description": "Store your settings for contacts"
+                                "PhoneCommunicationLog":
+                                  "description": "FING/Orange retrieve calls log from your invoice"
+                                "ContactLog":
+                                  "description": "Log your history with a contact"
+                                "Mail":
+                                  "description": "Display last emails for a contact"
+                                "Task":
+                                  "description": "Create call tasks from a contact"
+                                "TodoList": 
+                                  "description": "Create the \"inbox\" TodoList"
+                                "Tree": 
+                                  "description": "Find the Inbox TodoList"
+
+                        dSclient = new Client dataSystemUrl
+                        dSclient.setBasicAuth 'home', token if token = getToken()
+                        dSclient.post 'data/', manifest, (err, res, body) =>
                             console.log "#{app} successfully installed"
-                        else
-                            handleError null, null, "Install home failed"
+
 
 program
     .command("install-cozy-stack")
