@@ -30,7 +30,41 @@ homeClient = new Client homeUrl
 statusClient = new Client ''
 appsPath = '/usr/local/cozy/apps'
 
+apps = {
+    "contacts":
+        "Contact":
+            "description": "Creates and edits your contacts."
+        "CozyInstance":
+          "description": "Read language setting"
+        "ContactConfig":
+          "description": "Store your settings for contacts"
+        "PhoneCommunicationLog":
+          "description": "FING/Orange retrieve calls log from your invoice"
+        "ContactLog":
+          "description": "Log your history with a contact"
+        "Mail":
+          "description": "Display last emails for a contact"
+        "Task":
+          "description": "Create call tasks from a contact"
+        "TodoList": 
+          "description": "Create the \"inbox\" TodoList"
+        "Tree": 
+          "description": "Find the Inbox TodoList"
+    "photos":
+        "Photo":
+            "description": "Creates and edits your photos"
+        "Album": 
+          "description": "Creates and edits your album which contains your photos."
+        "Contact":
+          "description": "Allows you to easily share an album"
+        "CozyInstance": 
+          "description": "Read language setting"
+        "Send mail from user": 
+          "description": "Share album with your friends"
+        "File": 
+          "description": "Navigate in all files to create new album"
 
+}
 
 ## Helpers
 
@@ -205,23 +239,28 @@ program
 
 # Install
 program
-    .command("install <app> ")
+    .command("install <app>")
     .description("Install application")
+    .option('-n, --name <name>', 'Use specific name')
+    .option('-p, --password <password>', 'Use specific password')
     .option('-r, --repo <repo>', 'Use specific repo')
     .option('-b, --branch <branch>', 'Use specific branch')
-    .option('-d, --displayName <displayName>', 'Display specific name')
     .action (app, options) ->
         manifest.name = app
         manifest.password = randomString 12
-        if options.displayName?
-            manifest.displayName = options.displayName
-        else
-            manifest.displayName = app
         manifest.user = app
         console.log "Install started for #{app}..."
         unless options.repo?
-            manifest.repository.url =
-                "https://github.com/mycozycloud/cozy-#{app}.git"
+            if options.name? and options.password?
+                if app is 'home'
+                    manifest.repository.url =
+                        "https://#{options.name}:#{options.password}@gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                else
+                    manifest.repository.url =
+                        "https://#{options.name}:#{options.password}@gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+            else
+                manifest.repository.url =
+                    "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"                
         else
             manifest.repository.url = options.repo
         if options.branch?
@@ -231,8 +270,6 @@ program
                 if err or body.error?
                     handleError err, body, "Install failed"
                 else
-                    #client.brunch manifest, =>
-
                     if app in ['data-system', 'home', 'proxy']
                         console.log "#{app} successfully installed"
                     else
@@ -240,56 +277,12 @@ program
                         manifest.docType = "Application"
                         manifest.state = "installed"
                         manifest.slug = manifest.name
-                        if manifest.name is "contacts"
-                            manifest.permissions =
-                                "Contact":
-                                    "description": "Creates and edits your contacts."
-                                "CozyInstance":
-                                  "description": "Read language setting"
-                                "ContactConfig":
-                                  "description": "Store your settings for contacts"
-                                "PhoneCommunicationLog":
-                                  "description": "FING/Orange retrieve calls log from your invoice"
-                                "ContactLog":
-                                  "description": "Log your history with a contact"
-                                "Mail":
-                                  "description": "Display last emails for a contact"
-                                "Task":
-                                  "description": "Create call tasks from a contact"
-                                "TodoList": 
-                                  "description": "Create the \"inbox\" TodoList"
-                                "Tree": 
-                                  "description": "Find the Inbox TodoList"
-
+                        manifest.permissions = apps[manifest.name]
                         dSclient = new Client dataSystemUrl
                         dSclient.setBasicAuth 'home', token if token = getToken()
                         dSclient.post 'data/', manifest, (err, res, body) =>
                             console.log "#{app} successfully installed"
 
-
-program
-    .command("install-cozy-stack")
-    .description("Install cozy via the Cozy Controller")
-    .action () ->
-        installApp = (name, callback) ->
-            manifest.repository.url =
-                    "https://github.com/mycozycloud/cozy-#{name}.git"
-            manifest.name = name
-            manifest.user = name
-            console.log "Install started for #{name}..."
-            client.clean manifest, (err, res, body) ->
-                client.start manifest, (err, res, body)  ->
-                    if err or body.error?
-                        handleError err, body, "Install failed"
-                    else
-                        client.brunch manifest, =>
-                            console.log "#{name} successfully installed"
-                            callback null
-
-        installApp 'data-system', () =>
-            installApp 'home', () =>
-                installApp 'proxy', () =>
-                    console.log 'Cozy stack successfully installed'
 
 # Uninstall
 program
@@ -297,136 +290,13 @@ program
     .description("Remove application")
     .action (app) ->
         console.log "Uninstall started for #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            manifest.name = app
-            manifest.user = app
-            client.clean manifest, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Uninstall failed"
-                else
-                    console.log "#{app} successfully uninstalled"
-        else
-            path = "api/applications/#{app}/uninstall"
-            homeClient.del path, (err, res, body) ->
-                if err or res.statusCode isnt 200
-                    handleError err, body, "Uninstall home failed"
-                else
-                    console.log "#{app} successfully uninstalled"
-
-program
-    .command("uninstall-all")
-    .description("Uninstall all apps from controller")
-    .action (app) ->
-        console.log "Uninstall all apps..."
-
-        client.cleanAll (err, res, body) ->
-            if err  or body.error?
-                handleError err, body, "Uninstall all failed"
+        manifest.name = app
+        manifest.user = app
+        client.clean manifest, (err, res, body) ->
+            if err or body.error?
+                handleError err, body, "Uninstall failed"
             else
-                console.log "All apps successfully uinstalled"
-
-# Start
-program
-    .command("start <app>")
-    .description("Start application")
-    .action (app) ->
-        console.log "Starting #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            manifest.name = app
-            manifest.repository.url =
-                "https://github.com/mycozycloud/cozy-#{app}.git"
-            manifest.user = app
-            client.stop app, (err, res, body) ->
-                client.start manifest, (err, res, body) ->
-                    if err or body.error?
-                        handleError err, body, "Start failed"
-                    else
-                        console.log "#{app} successfully started"
-        else
-            find = false
-            homeClient.host = homeUrl
-            homeClient.get "api/applications/", (err, res, apps) ->
-                if apps? and apps.rows?
-                    for manifest in apps.rows
-                        if manifest.name is app
-                            find = true
-                            path = "api/applications/#{manifest.slug}/start"
-                            homeClient.post path, manifest, (err, res, body) ->
-                                if err or body.error
-                                    handleError err, body, "Start failed"
-                                else
-                                    console.log "#{app} successfully started"
-                    if not find
-                        console.log "Start failed : application #{app} not found"
-                else
-                    console.log "Start failed : no applications installed"
-
-# Stop
-program
-    .command("stop <app>")
-    .description("Stop application")
-    .action (app) ->
-        console.log "Stopping #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            manifest.name = app
-            manifest.user = app
-            client.stop app, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Stop failed"
-                else
-                    console.log "#{app} successfully stopped"
-        else
-            find = false
-            homeClient.host = homeUrl
-            homeClient.get "api/applications/", (err, res, apps) ->
-                if apps? and apps.rows?
-                    for manifest in apps.rows
-                        if manifest.name is app
-                            find = true
-                            path = "api/applications/#{manifest.slug}/stop"
-                            homeClient.post path, manifest, (err, res, body) ->
-                                if err or body.error
-                                    handleError err, body, "Start failed"
-                                else
-                                    console.log "#{app} successfully stopped"
-                    if not find
-                        console.log "Stop failed : application #{app} not found"
-                else
-                    console.log "Stop failed : no applications installed"
-
-
-program
-    .command("stop-all")
-    .description("Stop all user applications")
-    .action ->
-
-        stopApp = (app) ->
-            (callback) ->
-                console.log("\nStop " + app.name + "...")
-                path = "api/applications/#{app.slug}/stop"
-                homeClient.post path, app, (err, res, body) ->
-                    if err or body.error
-                        console.log(' * Error: ' + err)
-                    callback()
-
-        homeClient.host = homeUrl
-        homeClient.get "api/applications/", (err, res, apps) ->
-            funcs = []
-            if apps? and apps.rows?
-                for app in apps.rows
-                    func = stopApp(app)
-                    funcs.push func
-
-                async.series funcs, ->
-                    console.log "\nAll apps stopped."
-                    console.log "Reset proxy routes"
-
-                    statusClient.host = proxyUrl
-                    statusClient.get "routes/reset", (err, res, body) ->
-                        if err
-                            handleError err, body, "Cannot reset routes."
-                        else
-                            console.log "Reset proxy succeeded."
+                console.log "#{app} successfully uninstalled"
 
 # Restart
 program
@@ -434,59 +304,56 @@ program
     .description("Restart application")
     .action (app) ->
         console.log "Stopping #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            client.stop app, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Stop failed"
-                else
-                    console.log "#{app} successfully stopped"
-                    console.log "Starting #{app}..."
-                    manifest.name = app
-                    manifest.repository.url =
-                        "https://github.com/mycozycloud/cozy-#{app}.git"
-                    manifest.user = app
-                    client.start manifest, (err, res, body) ->
-                        if err
-                            handleError err, body, "Start failed"
-                        else
-                            console.log "#{app} sucessfully started"
-        else
-            homeClient.post "api/applications/#{app}/stop", {}, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Stop failed"
-                else
-                    console.log "#{app} successfully stopped"
-                    console.log "Starting #{app}..."
-                    path = "api/applications/#{app}/start"
-                    homeClient.post path, {}, (err, res, body) ->
-                        if err
-                            handleError err, body, "Start failed"
-                        else
-                            console.log "#{app} sucessfully started"
-
-program
-    .command("restart-cozy-stack")
-    .description("Restart cozy trough controller")
-    .action () ->
-        restartApp = (name, callback) ->
-            manifest.repository.url =
-                    "https://github.com/mycozycloud/cozy-#{name}.git"
-            manifest.name = name
-            manifest.user = name
-            console.log "Restart started for #{name}..."
-            client.stop manifest, (err, res, body) ->
-                client.start manifest, (err, res, body)  ->
-                    if err or body.error?
+        client.stop app, (err, res, body) ->
+            if err or body.error?
+                handleError err, body, "Stop failed"
+            else
+                console.log "#{app} successfully stopped"
+                console.log "Starting #{app}..."
+                manifest.name = app
+                manifest.repository.url =
+                    "https://github.com/mycozycloud/cozy-#{app}.git"
+                manifest.user = app
+                client.start manifest, (err, res, body) ->
+                    if err
                         handleError err, body, "Start failed"
                     else
-                        client.brunch manifest, =>
-                            console.log "#{name} successfully started"
-                            callback null
+                        console.log "#{app} sucessfully started"
 
-        restartApp 'data-system', () =>
-            restartApp 'home', () =>
-                restartApp 'proxy', () =>
-                    console.log 'Cozy stack successfully restarted'
+# Chnage branch
+program
+    .command("branch <app> <branch>")
+    .description("Change application branch")
+    .action (app, branch) ->
+        if app in ['data-system', 'home', 'proxy']
+            if app is 'home'
+                path = "#{appsPath}/#{app}/#{app}/digidisk-files"
+            else  
+                path = "#{appsPath}/#{app}/#{app}/digidisk-#{app}" 
+        else
+            path = "#{appsPath}/#{app}/#{app}/cozy-#{app}"                    
+        exec "cd #{path}; git stash && git pull origin #{branch}", (err, res) =>
+            if not err?  
+                # Restart app
+                console.log('restart')
+                client.stop app, (err, res, body) ->
+                    if err or body.error?
+                        handleError err, body, "Stop failed"
+                    else
+                        console.log "#{app} successfully stopped"
+                        console.log "Starting #{app}..."
+                        manifest.name = app
+                        manifest.repository.url =
+                            "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+                        if app is "home"
+                            manifest.repository.url =
+                                "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                        manifest.user = app
+                        client.start manifest, (err, res, body) ->
+                                    console.log "#{app} successfully updated"
+            else
+                handleError err, "", "Update failed"
+
 
 # Brunch
 program
@@ -506,13 +373,49 @@ program
 
 # Update
 program
-    .command("update <app> [repo]")
+    .command("update <app> <branch> [repo]")
     .description(
         "Update application (git + npm) and restart it. Option repo is usefull " +
             "only if home, proxy or data-system comes from specific repo")
-    .action (app, repo) ->
+    .action (app, branch, repo) ->
         console.log "Update #{app}..."
         if app in ['data-system', 'home', 'proxy']
+            manifest.name = app
+            if app is 'home'
+                path = "#{appsPath}/#{app}/#{app}/digidisk-files"
+            else  
+                path = "#{appsPath}/#{app}/#{app}/digidisk-#{app}" 
+            manifest.user = app
+            # Git pull
+            console.log('git pull')
+            exec "cd #{path}; git pull origin #{branch}", (err, res) =>
+                if not err?
+                    # Npm install
+                    console.log('npm install')
+                    exec "cd #{path}; npm install", (err, res) =>
+                        if not err?  
+                            # Restart app
+                            console.log('restart')
+                            client.stop app, (err, res, body) ->
+                                if err or body.error?
+                                    handleError err, body, "Stop failed"
+                                else
+                                    console.log "#{app} successfully stopped"
+                                    console.log "Starting #{app}..."
+                                    manifest.name = app
+                                    manifest.repository.url =
+                                        "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+                                    if app is "home"
+                                        manifest.repository.url =
+                                            "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                                    manifest.user = app
+                                    client.start manifest, (err, res, body) ->
+                                                console.log "#{app} successfully updated"
+                        else
+                            handleError err, "", "Update failed"
+                else
+                    handleError err, "", "Update failed"
+        else
             manifest.name = app
             if repo?
                 manifest.repository.url = repo
@@ -525,177 +428,7 @@ program
                     handleError err, body, "Update failed"
                 else
                     console.log "#{app} successfully updated"
-        else
-            find = false
-            homeClient.get "api/applications/", (err, res, apps) ->
-                if apps? and apps.rows?
-                    for manifest in apps.rows
-                        if manifest.name is app
-                            find = true
-                            path = "api/applications/#{manifest.slug}/update"
-                            homeClient.put path, manifest, (err, res, body) ->
-                                if err or body.error
-                                    handleError err, body, "Update failed"
-                                else
-                                    console.log "#{app} successfully updated"
-                    if not find
-                        console.log "Update failed : application #{app} not found"
-                else
-                    console.log "Update failed : no applications installed"
 
-program
-    .command("update-cozy-stack")
-    .description(
-        "Update application (git + npm) and restart it through controller")
-    .action () ->
-        lightUpdateApp = (name, callback) ->
-            manifest.repository.url =
-                    "https://github.com/mycozycloud/cozy-#{name}.git"
-            manifest.name = name
-            manifest.user = name
-            console.log "Light update #{name}..."
-            client.lightUpdate manifest, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Start failed"
-                else
-                    client.brunch manifest, =>
-                        console.log "#{name} successfully updated"
-                        callback null
-
-        lightUpdateApp 'data-system', () =>
-            lightUpdateApp 'home', () =>
-                lightUpdateApp 'proxy', () =>
-                    console.log 'Cozy stack successfully updated'
-
-program
-    .command("update-all")
-    .description("Reinstall all user applications")
-    .action ->
-        startApp = (app, callback) ->
-            path = "api/applications/#{app.slug}/start"
-            homeClient.post path, app, (err, res, body) ->
-                if err or body.error
-                    callback(err)
-                else
-                    callback()
-
-        removeApp = (app, callback) ->
-            path = "api/applications/#{app.slug}/uninstall"
-            homeClient.del path, (err, res, body) ->
-                if err or body.error
-                    callback(err)
-                else
-                    callback()
-
-        installApp = (app, callback) ->
-            path = "api/applications/install"
-            homeClient.post path, app, (err, res, body) ->
-                waitInstallComplete app.slug, (err, appresult) ->
-                    if err or body.error
-                        callback(err)
-                    else
-                        callback()
-
-        stopApp = (app, callback) ->
-            path = "api/applications/#{app.slug}/stop"
-            homeClient.post path, app, (err, res, body) ->
-                if err or body.error
-                    callback(err)
-                else
-                    callback()
-
-        lightUpdateApp = (app, callback) ->
-            path = "api/applications/#{app.slug}/update"
-            homeClient.put path, app, (err, res, body) ->
-                if err or body.error
-                    callback(err)
-                else
-                    callback()
-
-        endUpdate = (app, callback) ->
-            homeClient.get "api/applications/byid/#{app.id}", (err, res, app) ->
-                if app.state is "installed"
-                    console.log(" * New status: " + "started".bold)
-                else
-                    console.log(" * New status: " + app.state.bold)
-                console.log("..." + app.name + " updated")
-                callback()
-
-        updateApp = (app) ->
-            (callback) ->
-                console.log("\nStarting update " + app.name + "...")
-                # When application is broken, try :
-                #   * remove application
-                #   * install application
-                #   * stop application
-                if app.state is 'broken'
-                    console.log(" * Old status: " + "broken".bold)
-                    console.log(" * Remove " + app.name)
-                    removeApp app, (err) ->
-                        if err
-                            console.log(' * Error: ' + err)
-                        console.log(" * Install " + app.name)
-                        installApp app, (err) ->
-                            if err
-                                console.log(' * Error: ' + err)
-                                endUpdate(app, callback)
-                            else
-                                console.log(" * Stop " + app.name)
-                                stopApp app, (err) ->
-                                    if err
-                                        console.log(' * Error: ' + err)
-                                    endUpdate(app, callback)
-
-                # When application is installed, try :
-                #   * update application
-                else if app.state is 'installed'
-                    console.log(" * Old status: " + "started".bold)
-                    console.log(" * Update " + app.name)
-                    lightUpdateApp app, (err) ->
-                        if err
-                            console.log(' * Error: ' + err)
-                        endUpdate(app, callback)
-
-                # When application is stopped, try :
-                #   * start application
-                #   * update application
-                #   * stop application
-                else
-                    console.log(" * Old status: " + "stopped".bold)
-                    console.log(" * Start " + app.name)
-                    startApp app, (err) ->
-                        if err
-                            console.log(' * Error: ' + err)
-                            endUpdate(app, callback)
-                        else
-                            console.log(" * Update " + app.name)
-                            lightUpdateApp app, (err) ->
-                                if err
-                                    console.log(' * Error: ' + err)
-                                console.log(" * Stop " + app.name)
-                                stopApp app, (err) ->
-                                    if err
-                                        console.log(' * Error: ' + err)
-                                    endUpdate(app, callback)
-
-        homeClient.host = homeUrl
-        homeClient.get "api/applications/", (err, res, apps) ->
-            funcs = []
-            if apps? and apps.rows?
-                for app in apps.rows
-                    func = updateApp(app)
-                    funcs.push func
-
-                async.series funcs, ->
-                    console.log "\nAll apps reinstalled."
-                    console.log "Reset proxy routes"
-
-                    statusClient.host = proxyUrl
-                    statusClient.get "routes/reset", (err, res, body) ->
-                        if err
-                            handleError err, body, "Cannot reset routes."
-                        else
-                            console.log "Reset proxy succeeded."
 
 # Versions
 program
@@ -705,6 +438,8 @@ program
         getVersion = (name) =>
             if name is "controller"
                 path = "/usr/local/lib/node_modules/cozy-controller/package.json"
+            else if name in ['home', 'proxy', 'data-system']
+                path = "#{appsPath}/#{name}/#{name}/digidisk-#{name}/package.json"
             else
                 path = "#{appsPath}/#{name}/#{name}/cozy-#{name}/package.json"
             if fs.existsSync path
@@ -730,74 +465,6 @@ program
         getVersionIndexer (indexerVersion) =>            
             console.log "indexer: #{indexerVersion}"
             console.log "monitor: #{version}"
-
-program
-    .command("versions-all")
-    .description("Display applications versions")
-    .action () ->
-        getVersion = (name) =>
-            if name is "controller"
-                path = "/usr/local/lib/node_modules/cozy-controller/package.json"
-            else
-                path = "#{appsPath}/#{name}/#{name}/cozy-#{name}/package.json"
-            if fs.existsSync path
-                data = fs.readFileSync path, 'utf8'
-                data = JSON.parse(data)
-                console.log "#{name}: #{data.version}"
-            else
-                console.log("#{name}: unknown")
-
-        getVersionIndexer = (callback) =>
-            client = new Client('http://localhost:9102')
-            client.get '', (err, res, body) =>
-                if body? and body.split('v')[1]?
-                    callback  body.split('v')[1]
-                else
-                    callback "unknown"
-                    
-        console.log('Cozy Stack:'.bold)
-        getVersion("controller")
-        getVersion("data-system")
-        getVersion("home")
-        getVersion('proxy')
-        getVersionIndexer (version) =>            
-            console.log "indexer: #{version}"
-            console.log "monitor: #{version}"
-            console.log("Other applications: ".bold)
-            homeClient.host = homeUrl
-            homeClient.get "api/applications/", (err, res, apps) ->
-                if apps? and apps.rows?
-                    for app in apps.rows
-                        getVersion(app.name)
-
-program
-    .command("versions-apps")
-    .description("Display applications versions")
-    .action () ->
-        getVersion = (name) =>
-            if name is "controller"
-                path = "/usr/local/lib/node_modules/cozy-controller/package.json"
-            else
-                path = "#{appsPath}/#{name}/#{name}/cozy-#{name}/package.json"
-            if fs.existsSync path
-                data = fs.readFileSync path, 'utf8'
-                data = JSON.parse(data)
-                console.log "#{name}: #{data.version}"
-            else
-                console.log("#{name}: unknown")
-        console.log('Cozy Stack:'.bold)
-        getVersion("controller")
-        getVersion("data-system")
-        getVersion("home")
-        getVersion('proxy')
-        console.log "monitor: #{version}"
-        console.log("Other applications: ".bold)
-        homeClient.host = homeUrl
-        homeClient.get "api/applications/", (err, res, apps) ->
-            if apps? and apps.rows?
-                for app in apps.rows
-                    getVersion(app.name)
-
 
 ## Monitoring ###
 
