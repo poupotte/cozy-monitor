@@ -310,15 +310,35 @@ program
             else
                 console.log "#{app} successfully stopped"
                 console.log "Starting #{app}..."
-                manifest.name = app
-                manifest.repository.url =
-                    "https://github.com/mycozycloud/cozy-#{app}.git"
-                manifest.user = app
-                client.start manifest, (err, res, body) ->
-                    if err
-                        handleError err, body, "Start failed"
-                    else
-                        console.log "#{app} sucessfully started"
+                if app in ['home', 'data-system', 'proxy']
+                    manifest.name = app
+                    manifest.repository.url =
+                        "https://github.com/mycozycloud/cozy-#{app}.git"
+                    manifest.user = app
+                    client.start manifest, (err, res, body) ->
+                        if err
+                            handleError err, body, "Start failed"
+                        else
+                            console.log "#{app} sucessfully started"
+                else
+                    dSclient = new Client dataSystemUrl
+                    dSclient.setBasicAuth 'home', token if token = getToken()
+                    dSclient.post 'request/application/all/', {}, (err, res, body) ->
+                        if not err?
+                            for appli in body
+                                if appli.value.name is app
+                                    manifest.password = appli.value.password
+                            manifest.name = app
+                            manifest.repository.url =
+                                "https://github.com/mycozycloud/cozy-#{app}.git"
+                            manifest.user = app
+                            client.start manifest, (err, res, body) ->
+                                if err
+                                    handleError err, body, "Start failed"
+                                else
+                                    console.log "#{app} sucessfully started"
+                        else
+                            handleError err, body, "Start failed"
 
 # Chnage branch
 program
