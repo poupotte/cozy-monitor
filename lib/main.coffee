@@ -442,12 +442,19 @@ program
             else     
                 manifest.repository.url =
                     "https ://github.com/mycozycloud/cozy-#{app}.git"
-            manifest.user = app
-            client.lightUpdate manifest, (err, res, body) ->
-                if err or body.error?
-                    handleError err, body, "Update failed"
-                else
-                    console.log "#{app} successfully updated"
+            dSclient = new Client dataSystemUrl
+            dSclient.setBasicAuth 'home', token if token = getToken()
+            dSclient.post 'request/application/all/', {}, (err, res, body) ->
+                if not err?
+                    for appli in body
+                        if appli.value.name is app
+                            manifest.password = appli.value.password
+                manifest.user = app
+                client.lightUpdate manifest, (err, res, body) ->
+                    if err or body.error?
+                        handleError err, body, "Update failed"
+                    else
+                        console.log "#{app} successfully updated"
 
 
 # Versions
