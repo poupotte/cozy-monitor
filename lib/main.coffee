@@ -280,8 +280,14 @@ program
                         manifest.permissions = apps[manifest.name]
                         dSclient = new Client dataSystemUrl
                         dSclient.setBasicAuth 'home', token if token = getToken()
-                        dSclient.post 'data/', manifest, (err, res, body) =>
-                            console.log "#{app} successfully installed"
+                        dSclient.post 'request/application/all/', {}, (err, res, body) ->
+                            if not err?
+                                for appli in body
+                                    if appli.value.name is app
+                                        dSclient.del "data/#{appli.id}/", (err, res, body) =>
+                                            console.log 'delete document'
+                            dSclient.post 'data/', manifest, (err, res, body) =>
+                                console.log "#{app} successfully installed"
 
 
 # Uninstall
