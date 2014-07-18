@@ -30,6 +30,20 @@ homeClient = new Client homeUrl
 statusClient = new Client ''
 appsPath = '/usr/local/cozy/apps'
 
+
+getIds = () ->
+    if fs.existsSync '/etc/cozy/gitlab.login'
+        try
+            ids = fs.readFileSync '/etc/cozy/gitlab.login', 'utf8'
+            id = ids.split('\n')[0]
+            pwd = ids.split('\n')[1]
+            return [id, pwd]
+        catch err
+            console.log("Are you sure, you are root ?")
+            return null
+    else
+        return null
+
 apps = {
     "contacts":
         "Contact":
@@ -241,8 +255,6 @@ program
 program
     .command("install <app>")
     .description("Install application")
-    .option('-n, --name <name>', 'Use specific name')
-    .option('-p, --password <password>', 'Use specific password')
     .option('-r, --repo <repo>', 'Use specific repo')
     .option('-b, --branch <branch>', 'Use specific branch')
     .action (app, options) ->
@@ -250,19 +262,16 @@ program
         manifest.password = randomString 12
         manifest.user = app
         console.log "Install started for #{app}..."
-        unless options.repo?
-            if options.name? and options.password?
-                if app is 'home'
-                    manifest.repository.url =
-                        "https://#{options.name}:#{options.password}@gitlab.cozycloud.cc/cozy/digidisk-files.git"
-                else
-                    manifest.repository.url =
-                        "https://#{options.name}:#{options.password}@gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+        if options.repo?
+            manifest.repository.url = options.repo
+        else
+            [name, password] = getIds()
+            if app is 'home'
+                manifest.repository.url =
+                    "https://#{name}:#{password}@gitlab.cozycloud.cc/cozy/digidisk-files.git"
             else
                 manifest.repository.url =
-                    "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"                
-        else
-            manifest.repository.url = options.repo
+                    "https://#{name}:#{password}@gitlab.cozycloud.cc/cozy/digidisk-#{app}.git" 
         if options.branch?
             manifest.repository.branch = options.branch
         client.clean manifest, (err, res, body) ->
@@ -405,62 +414,58 @@ program
             "only if home, proxy or data-system comes from specific repo")
     .action (app, branch, repo) ->
         console.log "Update #{app}..."
-        if app in ['data-system', 'home', 'proxy']
-            manifest.name = app
-            if app is 'home'
-                path = "#{appsPath}/#{app}/#{app}/digidisk-files"
-            else  
-                path = "#{appsPath}/#{app}/#{app}/digidisk-#{app}" 
-            manifest.user = app
-            # Git pull
-            console.log('git pull')
-            exec "cd #{path}; git pull origin #{branch}", (err, res) =>
-                if not err?
-                    # Npm install
-                    console.log('npm install')
-                    exec "cd #{path}; npm install", (err, res) =>
-                        if not err?  
-                            # Restart app
-                            console.log('restart')
-                            client.stop app, (err, res, body) ->
-                                if err or body.error?
-                                    handleError err, body, "Stop failed"
-                                else
-                                    console.log "#{app} successfully stopped"
-                                    console.log "Starting #{app}..."
-                                    manifest.name = app
+        manifest.name = app
+        if app is 'home'
+            path = "#{appsPath}/#{app}/#{app}/digidisk-files"
+        else  
+            path = "#{appsPath}/#{app}/#{app}/digidisk-#{app}" 
+        manifest.user = app
+        # Git pull
+        console.log('git pull')
+        exec "cd #{path}; git pull origin #{branch}", (err, res) =>
+            if not err?
+                # Npm install
+                console.log('npm install')
+                exec "cd #{path}; npm install", (err, res) =>
+                    if not err?  
+                        # Restart app
+                        console.log('restart')
+                        client.stop app, (err, res, body) ->
+                            if err or body.error?
+                                handleError err, body, "Stop failed"
+                            else
+                                console.log "#{app} successfully stopped"
+                                console.log "Starting #{app}..."
+                                manifest.name = app
+                                manifest.repository.url =
+                                    "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+                                if app is "home"
                                     manifest.repository.url =
-                                        "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
-                                    if app is "home"
-                                        manifest.repository.url =
-                                            "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                                        "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                                if app in ['data-system', 'home', 'proxy']
                                     manifest.user = app
                                     client.start manifest, (err, res, body) ->
-                                                console.log "#{app} successfully updated"
-                        else
-                            handleError err, "", "Update failed"
-                else
-                    handleError err, "", "Update failed"
-        else
-            manifest.name = app
-            if repo?
-                manifest.repository.url = repo
-            else     
-                manifest.repository.url =
-                    "https ://github.com/mycozycloud/cozy-#{app}.git"
-            dSclient = new Client dataSystemUrl
-            dSclient.setBasicAuth 'home', token if token = getToken()
-            dSclient.post 'request/application/all/', {}, (err, res, body) ->
-                if not err?
-                    for appli in body
-                        if appli.value.name is app
-                            manifest.password = appli.value.password
-                manifest.user = app
-                client.lightUpdate manifest, (err, res, body) ->
-                    if err or body.error?
-                        handleError err, body, "Update failed"
+                                        if err
+                                            handleError err, "", "Update failed"
+                                        else
+                                            console.log "#{app} successfully updated"
+                                else
+                                    dSclient = new Client dataSystemUrl
+                                    dSclient.setBasicAuth 'home', token if token = getToken()
+                                    dSclient.post 'request/application/all/', {}, (err, res, body) ->
+                                        if not err?
+                                            for appli in body
+                                                if appli.value.name is app
+                                                    manifest.password = appli.value.password
+                                            client.start manifest, (err, res, body) ->
+                                                if err
+                                                    handleError err, "", "Update failed"
+                                                else
+                                                    console.log "#{app} successfully updated"
                     else
-                        console.log "#{app} successfully updated"
+                        handleError err, "", "Update failed"
+            else
+                handleError err, "", "Update failed"
 
 
 # Versions
