@@ -77,7 +77,25 @@ apps = {
           "description": "Share album with your friends"
         "File": 
           "description": "Navigate in all files to create new album"
-
+    "pfm":
+        "Bank": 
+          "description": "Les banques auxquelles vous pouvez accéder via l'application."
+        "BankAccess": 
+          "description": "Vos identifiants d'accès à votre banque sont stockés de façon sécurisée."
+        "BankAccount": 
+          "description": "Vos différents comptes bancaires."
+        "BankOperation": 
+          "description": "Une opération bancaire."
+        "BankAlert": 
+          "description": "Une alerte liée à vos comptes bancaires."
+        "send mail to user": 
+          "description": "A votre demande, des rapports journaliers, hebdomadaires ou mensuels peuvent vous être envoyés par email."
+        "Notification": 
+          "description": "Des notifications sont créées lorsque des alertes sont mises en place dans l'application."
+        "CozyInstance": 
+          "description": "Afin d'afficher le contenu dans votre langue, l'application doit accéder à vos préférences."
+        "File": 
+          "description": "Create new file"
 }
 
 ## Helpers
@@ -269,9 +287,12 @@ program
             if app is 'home'
                 manifest.repository.url =
                     "https://#{name}:#{password}@gitlab.cozycloud.cc/cozy/digidisk-files.git"
-            else
+            else if app in ['data-system', 'proxy']
                 manifest.repository.url =
                     "https://#{name}:#{password}@gitlab.cozycloud.cc/cozy/digidisk-#{app}.git" 
+            else
+                manifest.repository.url =
+                    "https://#{name}:#{password}@gitlab.cozycloud.cc/zoe/digidisk-#{app}.git" 
         if options.branch?
             manifest.repository.branch = options.branch
         client.clean manifest, (err, res, body) ->
