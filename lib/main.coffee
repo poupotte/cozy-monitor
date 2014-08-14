@@ -77,6 +77,8 @@ apps = {
           "description": "Share album with your friends"
         "File": 
           "description": "Navigate in all files to create new album"
+        "Log": 
+          "description": "Log sharing"
     "pfm":
         "Bank": 
           "description": "Les banques auxquelles vous pouvez accéder via l'application."
