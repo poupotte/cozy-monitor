@@ -445,52 +445,55 @@ program
         else  
             path = "#{appsPath}/#{app}/#{app}/digidisk-#{app}" 
         manifest.user = app
-        # Git pull
-        console.log('git pull')
-        exec "cd #{path}; git pull origin #{branch}", (err, res) =>
-            if not err?
-                # Npm install
-                console.log('npm install')
-                exec "cd #{path}; npm install", (err, res) =>
-                    if not err?  
-                        # Restart app
-                        console.log('restart')
-                        client.stop app, (err, res, body) ->
-                            if err or body.error?
-                                handleError err, body, "Stop failed"
-                            else
-                                console.log "#{app} successfully stopped"
-                                console.log "Starting #{app}..."
-                                manifest.name = app
-                                manifest.repository.url =
-                                    "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
-                                if app is "home"
-                                    manifest.repository.url =
-                                        "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
-                                if app in ['data-system', 'home', 'proxy']
-                                    manifest.user = app
-                                    client.start manifest, (err, res, body) ->
-                                        if err
-                                            handleError err, "", "Update failed"
-                                        else
-                                            console.log "#{app} successfully updated"
+        # Git stash
+        console.log('git stash')
+        exec "cd #{path}; git stash", (err, res) =>
+            # Git pull
+            console.log('git pull')
+            exec "cd #{path}; git pull origin #{branch}", (err, res) =>
+                if not err?
+                    # Npm install
+                    console.log('npm install')
+                    exec "cd #{path}; npm install", (err, res) =>
+                        if not err?  
+                            # Restart app
+                            console.log('restart')
+                            client.stop app, (err, res, body) ->
+                                if err or body.error?
+                                    handleError err, body, "Stop failed"
                                 else
-                                    dSclient = new Client dataSystemUrl
-                                    dSclient.setBasicAuth 'home', token if token = getToken()
-                                    dSclient.post 'request/application/all/', {}, (err, res, body) ->
-                                        if not err?
-                                            for appli in body
-                                                if appli.value.name is app
-                                                    manifest.password = appli.value.password
-                                            client.start manifest, (err, res, body) ->
-                                                if err
-                                                    handleError err, "", "Update failed"
-                                                else
-                                                    console.log "#{app} successfully updated"
-                    else
-                        handleError err, "", "Update failed"
-            else
-                handleError err, "", "Update failed"
+                                    console.log "#{app} successfully stopped"
+                                    console.log "Starting #{app}..."
+                                    manifest.name = app
+                                    manifest.repository.url =
+                                        "https://gitlab.cozycloud.cc/cozy/digidisk-#{app}.git"
+                                    if app is "home"
+                                        manifest.repository.url =
+                                            "https://gitlab.cozycloud.cc/cozy/digidisk-files.git"
+                                    if app in ['data-system', 'home', 'proxy']
+                                        manifest.user = app
+                                        client.start manifest, (err, res, body) ->
+                                            if err
+                                                handleError err, "", "Update failed"
+                                            else
+                                                console.log "#{app} successfully updated"
+                                    else
+                                        dSclient = new Client dataSystemUrl
+                                        dSclient.setBasicAuth 'home', token if token = getToken()
+                                        dSclient.post 'request/application/all/', {}, (err, res, body) ->
+                                            if not err?
+                                                for appli in body
+                                                    if appli.value.name is app
+                                                        manifest.password = appli.value.password
+                                                client.start manifest, (err, res, body) ->
+                                                    if err
+                                                        handleError err, "", "Update failed"
+                                                    else
+                                                        console.log "#{app} successfully updated"
+                        else
+                            handleError err, "", "Update failed"
+                else
+                    handleError err, "", "Update failed"
 
 
 # Versions
