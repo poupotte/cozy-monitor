@@ -18,6 +18,8 @@ axon = require 'axon'
 pkg = require '../package.json'
 version = pkg.version
 
+controllerPatch = require './controllerPatch'
+
 couchUrl = "http://localhost:5984/"
 dataSystemUrl = "http://localhost:9101/"
 indexerUrl = "http://localhost:9102/"
@@ -727,6 +729,15 @@ program
                             handleError err, body, "Cannot reset routes."
                         else
                             console.log "Reset proxy succeeded."
+
+
+program
+    .command("controller-patch")
+    .description("Patch to update controller.")
+    .action () ->
+        console.log "Patch for new controller"
+        controllerPatch.apply (err) ->
+            console.log err
 
 # Versions
 program
