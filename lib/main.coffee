@@ -323,6 +323,34 @@ program
                             dSclient.post 'data/', manifest, (err, res, body) =>
                                 console.log "#{app} successfully installed"
 
+program
+    .command("add-application <app>")
+    .description("Add application in database")
+    .action (app) ->
+        manifest.name = app
+        manifest.password = randomString 12
+        manifest.user = app
+        [name, password] = getIds()
+        if app is 'photos'
+            manifest.repository.branch = 'feature/photos'
+            manifest.port = "9119"
+        else
+            manifest.repository.branch = 'photos'
+            manifest.port = "9114"           
+        manifest.docType = "Application"
+        manifest.state = "installed"
+        manifest.slug = manifest.name
+        manifest.permissions = apps[manifest.name]
+        dSclient = new Client dataSystemUrl
+        dSclient.setBasicAuth 'home', token if token = getToken()
+        dSclient.post 'request/application/all/', {}, (err, res, body) ->
+            if not err?
+                for appli in body
+                    if appli.value.name is app
+                        dSclient.del "data/#{appli.id}/", (err, res, body) =>
+                            console.log 'delete document'
+            dSclient.post 'data/', manifest, (err, res, body) =>
+                console.log "#{app} successfully installed"
 
 # Uninstall
 program
