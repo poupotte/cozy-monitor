@@ -8,7 +8,7 @@ env:
         - NODE_ENV=test
 before_install:
     - npm install forever coffee-script -g
-    - npm install cozy-controller
+    - npm install cozy-controller -g
     - sudo sed -i -e 's/^Defaults\tsecure_path.*$//' /etc/sudoers
     - sudo forever start -o forever-ds.log /usr/local/lib/node_modules/cozy-controller/bin/cozy-controller
     - ps aux | grep controller
@@ -16,6 +16,8 @@ before_install:
     - cat forever-ds.log
     - curl http://localhost:9002/
     - cd ..
+
+script: 'cake tests'
 
 after_failure:
     - cat cozy-data-system/forever-ds.log
