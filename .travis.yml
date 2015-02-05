@@ -16,10 +16,8 @@ before_install:
     - sleep 5
     - cat forever-ds.log
     - curl http://localhost:9002/
-    - cd ..
 
 script: 'cake tests'
 
 after_failure:
-    - cat cozy-data-system/forever-ds.log
-    - cat cozy-data-system/log/test.log
+    - cat forever-ds.log
