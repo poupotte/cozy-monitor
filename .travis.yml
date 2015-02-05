@@ -9,6 +9,7 @@ env:
 before_install:
     - npm install forever coffee-script -g
     - npm install cozy-controller -g
+    - locate cozy-controller
     - sudo sed -i -e 's/^Defaults\tsecure_path.*$//' /etc/sudoers
     - sudo forever start -o forever-ds.log cozy-controller
     - ps aux | grep controller
