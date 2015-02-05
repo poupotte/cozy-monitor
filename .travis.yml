@@ -7,7 +7,7 @@ env:
     global:
         - NODE_ENV=test
 before_install:
-    - npm install forever coffee-script -g
+    - npm install forever mocha coffee-script -g
     - npm install cozy-controller
     - ls
     - sudo sed -i -e 's/^Defaults\tsecure_path.*$//' /etc/sudoers
