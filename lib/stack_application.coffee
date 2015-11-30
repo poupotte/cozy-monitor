@@ -8,7 +8,6 @@ exec = require('child_process').exec
 path = require('path')
 log = require('printit')()
 request = require("request-json-light")
-NotificationsHelper = require 'cozy-notifications-helper'
 
 
 helpers = require './helpers'
@@ -156,14 +155,16 @@ module.exports.update = (app, callback) ->
                             callback()
                         else
                             # remove update notification
-                            notifier = new NotificationsHelper 'home'
+                            process.env.NAME = "home"
+                            process.env.TOKEN = helpers.getToken()
+                            process.env.NODE_ENV = "production"
+                            NotificationsHelper = require 'cozy-notifications-helper'
+                            notifier = new NotificationsHelper 'home', helpers.getToken()
                             notificationSlug = """
                               home_update_notification_stack
                             """
                             notifier.destroy notificationSlug, (err) ->
-                                console.log err
                                 log.error err if err?
-                                console.log 'callback'
                                 callback()
 
 # Change stack application branch

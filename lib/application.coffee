@@ -7,7 +7,6 @@ path = require('path')
 log = require('printit')()
 request = require("request-json-light")
 colors = require "colors"
-NotificationsHelper = require 'cozy-notifications-helper'
 
 helpers = require './helpers'
 homeClient = helpers.clients.home
@@ -338,14 +337,15 @@ module.exports.update = (app, callback) ->
                             callback makeError(err, body)
                         else
                             # remove update notification
+                            process.env.NAME = "home"
+                            process.env.TOKEN = helpers.getToken()
+                            process.env.NODE_ENV = "production"
+                            NotificationsHelper = require 'cozy-notifications-helper'
                             notifier = new NotificationsHelper 'home'
                             notificationSlug = """
                               home_update_notification_app_#{app}
                             """
-                            console.log notifier
                             notifier.destroy notificationSlug, (err) ->
-                                console.log err
-                                console.log 'callback'
                                 log.error err if err?
                                 callback()
             if not find
