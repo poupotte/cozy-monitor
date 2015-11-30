@@ -272,6 +272,7 @@ uninstall = module.exports.uninstall = (app, callback) ->
 
 # Start application <app>
 start = module.exports.start = (app, callback) ->
+    console.log 'start'
     find = false
     homeClient.get "api/applications/", (err, res, apps) ->
         if apps? and apps.rows?
@@ -279,6 +280,8 @@ start = module.exports.start = (app, callback) ->
                 find = true
                 path = "api/applications/#{manifest.slug}/start"
                 homeClient.post path, manifest, (err, res, body) ->
+                    console.log err
+                    console.log body
                     if err or body.error
                         callback makeError(err, body)
                     else
@@ -293,16 +296,21 @@ start = module.exports.start = (app, callback) ->
 
 # Stop application <app>
 stop = module.exports.stop = (app, callback) ->
+    console.log "stop"
     find = false
     homeClient.get "api/applications/", (err, res, apps) ->
         if apps?.rows?
             for manifest in apps.rows when manifest.name is app
                 find = true
                 path = "api/applications/#{app}/stop"
-                homeClient.post path, app, (err, res, body) ->
+                console.log path
+                homeClient.post path, {}, (err, res, body) ->
+                    console.log body
+                    console.log err
                     if err? or body.error?
                         callback makeError(err, body)
                     else
+                        console.log 'else callback'
                         callback()
             unless find
                 err = "application #{app} not found"
@@ -362,11 +370,14 @@ module.exports.changeBranch = (app, branch, callback) ->
 
 # Restart application <app>
 module.exports.restart = (app, callback) ->
+    console.log "restart"
     log.info "stop #{app}"
     stop app, (err) ->
+        console.log err.toString()
         if err
             callback err
         else
+            console.log 'else start'
             log.info "start #{app}"
             start app, callback
 

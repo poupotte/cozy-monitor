@@ -124,6 +124,8 @@ describe "Application management", ->
                     done()
 
             it "Then error should not exist", ->
+                console.log @err
+                console.log @err.toString()
                 should.not.exist @err
 
             it "And photos should be started", (done) ->
