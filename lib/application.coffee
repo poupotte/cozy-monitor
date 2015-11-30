@@ -298,13 +298,13 @@ start = module.exports.start = (app, callback) ->
 stop = module.exports.stop = (app, callback) ->
     console.log "stop"
     find = false
-    homeClient.get "api/applications/", (err, res, apps) ->
+    homeClient.get "api/applications/", (err, res, apps) =>
         if apps?.rows?
             for manifest in apps.rows when manifest.name is app
                 find = true
                 path = "api/applications/#{app}/stop"
                 console.log path
-                homeClient.post path, {}, (err, res, body) ->
+                homeClient.post path, {}, (err, res, body) =>
                     console.log body
                     console.log err
                     if err? or body.error?
