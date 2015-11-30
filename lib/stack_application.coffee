@@ -161,7 +161,9 @@ module.exports.update = (app, callback) ->
                               home_update_notification_stack
                             """
                             notifier.destroy notificationSlug, (err) ->
+                                console.log err
                                 log.error err if err?
+                                console.log 'callback'
                                 callback()
 
 # Change stack application branch
