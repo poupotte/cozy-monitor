@@ -342,8 +342,10 @@ module.exports.update = (app, callback) ->
                             notificationSlug = """
                               home_update_notification_app_#{app}
                             """
+                            console.log notifier
                             notifier.destroy notificationSlug, (err) ->
                                 console.log err
+                                console.log 'callback'
                                 log.error err if err?
                                 callback()
             if not find
