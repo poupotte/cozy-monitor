@@ -232,7 +232,8 @@ module.exports.getVersions = getVersions = (callback) ->
     cozyStack = ['controller', 'data-system', 'home', 'proxy', 'indexer']
     homeClient.get '/api/applications/stack', (err, res, body) ->
         if err?
-            callback MakeError(err, null)
+            console.log err
+            callback makeError(err, null)
         else
             res = {}
             body.rows.forEach (app) ->

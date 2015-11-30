@@ -323,13 +323,17 @@ stop = module.exports.stop = (app, callback) ->
 # Update application <app>
 module.exports.update = (app, callback) ->
     find = false
+    console.log 'update'
     homeClient.get "api/applications/", (err, res, apps) ->
+        console.log "get"
         if apps? and apps.rows?
             for manifest in apps.rows
                 if manifest.name is app
                     find = true
                     path = "api/applications/#{manifest.slug}/update"
+                    console.log path
                     homeClient.put path, manifest, (err, res, body) ->
+                        console.log err, body
                         if err or body.error
                             callback makeError(err, body)
                         else
@@ -339,6 +343,7 @@ module.exports.update = (app, callback) ->
                               home_update_notification_app_#{app}
                             """
                             notifier.destroy notificationSlug, (err) ->
+                                console.log err
                                 log.error err if err?
                                 callback()
             if not find
