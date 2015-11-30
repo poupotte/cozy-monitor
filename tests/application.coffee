@@ -245,6 +245,7 @@ describe "Application management", ->
             it "When I send a request to update photos", (done) ->
                 @timeout 2 * MINUTE
                 application.update 'photos', (err) =>
+                    console.log 'end'
                     @err = err
                     done()
 
