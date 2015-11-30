@@ -373,7 +373,8 @@ module.exports.restart = (app, callback) ->
     console.log "restart"
     log.info "stop #{app}"
     stop app, (err) ->
-        console.log err.toString()
+        console.log 'err'
+        console.log err
         if err
             console.log 'if'
             console.log err
