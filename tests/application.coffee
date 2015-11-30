@@ -120,12 +120,9 @@ describe "Application management", ->
                 @timeout 2 * MINUTE
                 application.restart 'photos', (err) =>
                     @err = err
-                    console.log @err.toString() is @err?
                     done()
 
             it "Then error should not exist", ->
-                console.log @err
-                console.log @err.toString()
                 should.not.exist @err
 
             it "And photos should be started", (done) ->
