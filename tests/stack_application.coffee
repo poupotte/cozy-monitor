@@ -13,7 +13,8 @@ describe "Stack application management", ->
             @timeout 2 * MINUTE
             stackApplication.install 'data-system', {}, (err) =>
                 @err = err
-                done()
+                stackApplication.install 'home', {}, (err) =>
+                    done()
 
         it "Then error should not exist", ->
             should.not.exist @err
