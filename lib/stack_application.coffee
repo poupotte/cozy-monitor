@@ -256,7 +256,7 @@ module.exports.getVersions = getVersions = (callback) ->
                     lastVersion: app.lastVersion
                     needsUpdate: needsUpdate
 
-            async.map cozyStack, (app, cb) ->
+            async.eachSeries cozyStack, (app, cb) ->
                 if res[app]?
                     cb null, res[app]
                 else
