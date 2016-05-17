@@ -345,6 +345,7 @@ module.exports.reinstall = (app, options, callback) ->
         else
             log.info '     -> OK'
             log.info "    * install #{app}"
+            options.timeout = 5000
             install app, options, (err)->
                 if err
                     log.error '     -> KO'
