@@ -75,6 +75,8 @@ waitInstallComplete = (slug, timeout, callback) ->
     Realtimer = require 'cozy-realtime-adapter'
     realtime = Realtimer {}, ['application.*']
     realtime.on 'application.update', (event, id) ->
+        clearTimeout timeoutId
+        realtime.close()
         dsClient.setBasicAuth 'home', token if token = getToken()
         dsClient.get "data/#{id}/", (err, response, body) ->
             if response.statusCode is 401
@@ -83,8 +85,6 @@ waitInstallComplete = (slug, timeout, callback) ->
                     callback err, body
             else if body.state is 'installed'
                 callback err, body
-                clearTimeout timeoutId
-                socket.close()
 
 
 msgHomeNotStarted = (app) ->
