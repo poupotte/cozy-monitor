@@ -32,9 +32,6 @@ randomString = (length) ->
     return string.substr 0, length
 
 waitInstallComplete = (slug, timeout, callback) ->
-    axon   = require 'axon'
-    socket = axon.socket 'sub-emitter'
-    socket.connect 9105
     noAppListErrMsg = """
         No application listed after installation.
     """
@@ -75,8 +72,9 @@ waitInstallComplete = (slug, timeout, callback) ->
                     unless isApp
                         callback new Error appNotListedErrMsg
         , timeout
-
-    socket.on 'application.update', (id) ->
+    Realtimer = require 'cozy-realtime-adapter'
+    realtime = Realtimer server, ['event.*', 'contact.*']
+    realtime.on 'application.update', (id) ->
         console.log 'application.update'
 
         dsClient.setBasicAuth 'home', token if token = getToken()
