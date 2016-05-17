@@ -411,15 +411,24 @@ module.exports.installController = (app, callback) ->
         manifest.repository.url = app.git
         manifest.package = app.package
         manifest.type = app.type
+        log.info('manifest :')
+        log.info manifest
         dsClient.setBasicAuth 'home', token if token = getToken()
         dsClient.post 'request/access/byApp/', key: app.id, (err, res, body) ->
-            manifest.password = body[0].value.token
+            if body?[0]?.value?.token?
+                manifest.password = body[0].value.token
+            else
+                log.error "don't find access"
+                log.error err
+                log.error body
             if app.branch?
                 manifest.repository.branch = app.branch
             # Install (or start) application
             client.start manifest, (err, res, body) ->
                 if err or body.error
                     log.error '     -> KO'
+                    log.error body.error
+                    log.error err
                     callback makeError(err, body)
                 else
                     log.info '     -> OK'
