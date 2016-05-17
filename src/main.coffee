@@ -325,16 +325,6 @@ program
                 else
                     log.info 'Database successfully initialized'
 
-program
-    .command('remove-old-app-on-disk')
-    .description('Reinstall all user applications, usefull for cozy relocation')
-    .action () ->
-        apps = ["calendar", "contacts", "sync", "import-from-google", "emails", "files", "photos"]
-        async.forEachSeries apps, (app, next)->
-            rmdir "/usr/local/cozy/apps/#{app}", next
-        , (err)->
-            process.exit(0)
-
 
 # Reinstall all user applications (usefull for cozy relocation)
 program
