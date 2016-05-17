@@ -32,6 +32,9 @@ randomString = (length) ->
     return string.substr 0, length
 
 waitInstallComplete = (slug, timeout, callback) ->
+    axon   = require 'axon'
+    socket = axon.socket 'sub-emitter'
+    socket.connect 9105
     noAppListErrMsg = """
         No application listed after installation.
     """
@@ -45,7 +48,6 @@ waitInstallComplete = (slug, timeout, callback) ->
         timeout = 240000
     if timeout isnt 'false'
         timeoutId = setTimeout ->
-            console.log 'timeout'
             socket.close()
 
             homeClient.get "api/applications/", (err, res, apps) ->
@@ -72,21 +74,18 @@ waitInstallComplete = (slug, timeout, callback) ->
                     unless isApp
                         callback new Error appNotListedErrMsg
         , timeout
-    Realtimer = require 'cozy-realtime-adapter'
-    realtime = Realtimer {}, ['application.*']
-    realtime.on 'application.update', (event, id) ->
-        clearTimeout timeoutId
-        if callback?
-            dsClient.setBasicAuth 'home', token if token = getToken()
-            dsClient.get "data/#{id}/", (err, response, body) ->
-                if response.statusCode is 401
-                    dsClient.setBasicAuth 'home', ''
-                    dsClient.get "data/#{id}/", (err, response, body) ->
-                        callback err, body
-                        callback = null
-                else if body.state is 'installed'
+    socket.on 'application.update', (id) ->
+        console.log 'application.update'
+        dsClient.setBasicAuth 'home', token if token = getToken()
+        dsClient.get "data/#{id}/", (err, response, body) ->
+            if response.statusCode is 401
+                dsClient.setBasicAuth 'home', ''
+                dsClient.get "data/#{id}/", (err, response, body) ->
                     callback err, body
-                    callback = null
+            else if body.state is 'installed'
+                callback err, body
+                clearTimeout timeoutId
+                socket.close()
 
 
 msgHomeNotStarted = (app) ->
