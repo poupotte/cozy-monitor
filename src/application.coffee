@@ -48,6 +48,7 @@ waitInstallComplete = (slug, timeout, callback) ->
         timeout = 240000
     if timeout isnt 'false'
         timeoutId = setTimeout ->
+            console.log 'timeout'
             socket.close()
 
             homeClient.get "api/applications/", (err, res, apps) ->
@@ -76,6 +77,7 @@ waitInstallComplete = (slug, timeout, callback) ->
         , timeout
 
     socket.on 'application.update', (id) ->
+        console.log 'application.update'
 
         dsClient.setBasicAuth 'home', token if token = getToken()
         dsClient.get "data/#{id}/", (err, response, body) ->
@@ -345,7 +347,6 @@ module.exports.reinstall = (app, options, callback) ->
         else
             log.info '     -> OK'
             log.info "    * install #{app}"
-            options.timeout = 5000
             install app, options, (err)->
                 if err
                     log.error '     -> KO'
