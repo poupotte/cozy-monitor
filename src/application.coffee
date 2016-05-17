@@ -73,10 +73,8 @@ waitInstallComplete = (slug, timeout, callback) ->
                         callback new Error appNotListedErrMsg
         , timeout
     Realtimer = require 'cozy-realtime-adapter'
-    realtime = Realtimer server, ['event.*', 'contact.*']
+    realtime = Realtimer {}, ['application.*']
     realtime.on 'application.update', (id) ->
-        console.log 'application.update'
-
         dsClient.setBasicAuth 'home', token if token = getToken()
         dsClient.get "data/#{id}/", (err, response, body) ->
             if response.statusCode is 401
