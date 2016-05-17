@@ -76,14 +76,17 @@ waitInstallComplete = (slug, timeout, callback) ->
     realtime = Realtimer {}, ['application.*']
     realtime.on 'application.update', (event, id) ->
         clearTimeout timeoutId
-        dsClient.setBasicAuth 'home', token if token = getToken()
-        dsClient.get "data/#{id}/", (err, response, body) ->
-            if response.statusCode is 401
-                dsClient.setBasicAuth 'home', ''
-                dsClient.get "data/#{id}/", (err, response, body) ->
+        if callback?
+            dsClient.setBasicAuth 'home', token if token = getToken()
+            dsClient.get "data/#{id}/", (err, response, body) ->
+                if response.statusCode is 401
+                    dsClient.setBasicAuth 'home', ''
+                    dsClient.get "data/#{id}/", (err, response, body) ->
+                        callback err, body
+                        callback = null
+                else if body.state is 'installed'
                     callback err, body
-            else if body.state is 'installed'
-                callback err, body
+                    callback = null
 
 
 msgHomeNotStarted = (app) ->
