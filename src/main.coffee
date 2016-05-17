@@ -363,16 +363,13 @@ program
                             #     reinstall it with controller
                             log.info "#{app.slug} : installed. Reinstall " +
                                 "application if necessary..."
-                            if app.slug in specific_apps
-                                application.reinstall app.slug, app, callback
-                            else
-                                application.installController app, callback
+                            application.reinstall app.slug, app, callback
                         when 'stopped'
                             # if application is marked 'stopped' :
                             #     reinstall and then stop it with controller
                             log.info "#{app.slug} : stopped. Reinstall " +
                                 "application if necessary and stop it..."
-                            application.installController app, (err) ->
+                            application.reinstall app.slug, app, (err) ->
                                 return callback err if err?
                                 application.stopController app.slug, callback
                         when 'installing'
