@@ -41,7 +41,8 @@
     "lodash.find": "4.3.0",
     "printit": "0.1.19",
     "request-json-light": "0.5.22",
-    "shelljs": "0.6.0"
+    "shelljs": "0.6.0",
+    "rimraf": "2.5.2"
   },
   "devDependencies": {
     "chai": "3.5.0",

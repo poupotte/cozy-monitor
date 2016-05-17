@@ -11,6 +11,7 @@ exec = require('child_process').exec
 path = require('path')
 log = require('printit')()
 humanize = require('humanize')
+rmdir = require 'rimraf'
 
 request = require("request-json-light")
 
@@ -324,7 +325,15 @@ program
                 else
                     log.info 'Database successfully initialized'
 
-
+program
+    .command('remove-old-app-on-disk')
+    .description('Reinstall all user applications, usefull for cozy relocation')
+    .action () ->
+        apps = ["calendar", "contacts", "sync", "import-from-google", "emails", "files", "photos"]
+        async.forEachSeries apps, (app, next)->
+            rmdir "/usr/local/cozy/apps/#{app}", next
+        , (err)->
+            process.exit(0)
 
 
 # Reinstall all user applications (usefull for cozy relocation)
