@@ -342,6 +342,7 @@ program
     .description('Reinstall all user applications, usefull for cozy relocation')
     .option('-s, --error-safe', 'Command won\'t stop if an error occurs')
     .action (options) ->
+        specific_apps = ["calendar", "contacts", "sync", "import-from-google", "emails", "files", "photos"]
         application.getApps (err, apps) ->
             if err?
                 logError err, "Retrieve applications failed."
@@ -362,7 +363,10 @@ program
                             #     reinstall it with controller
                             log.info "#{app.slug} : installed. Reinstall " +
                                 "application if necessary..."
-                            application.installController app, callback
+                            if app.slug in specific_apps
+                                application.reinstall app.slug, app, callback
+                            else
+                                application.installController app, callback
                         when 'stopped'
                             # if application is marked 'stopped' :
                             #     reinstall and then stop it with controller
