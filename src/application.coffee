@@ -82,9 +82,11 @@ waitInstallComplete = (slug, timeout, callback) ->
             if response.statusCode is 401
                 dsClient.setBasicAuth 'home', ''
                 dsClient.get "data/#{id}/", (err, response, body) ->
-                    callback err, body
+                    callback err, body if callback?
+                    callback = null
             else if body.state is 'installed'
-                callback err, body
+                callback err, body if callback?
+                callback = null
                 clearTimeout timeoutId
                 socket.close()
 
